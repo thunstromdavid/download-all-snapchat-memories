@@ -1,0 +1,7 @@
+services:
+  snapchat-memories:
+    build: .
+    volumes:
+      - ./data:/data
+    # Uncomment to pass additional arguments
+    # command: ["--verbose"]
