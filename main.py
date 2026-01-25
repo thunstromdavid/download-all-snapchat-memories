@@ -32,11 +32,11 @@ def auto_discover_paths():
     """
     # Check 1: Docker Container Standard Path
     if os.path.exists('/data/json/memories_history.json'):
-        return '/data/memories', '/data/json/memories_history.json', '/data/fixed_memories'
+        return '/data/memories', '/data/json/memories_history.json', '/output'
 
     # Check 2: Current Directory
     if os.path.exists('json/memories_history.json'):
-         return 'memories', 'json/memories_history.json', 'fixed_memories'
+         return 'memories', 'json/memories_history.json', 'output'
 
     # Check 3: Immediate Subdirectories
     # This handles the case where the user drags "my_snapchat_backup" into the repo folder
@@ -48,7 +48,7 @@ def auto_discover_paths():
                 potential_json = item / 'json' / 'memories_history.json'
                 if potential_json.exists():
                     logger.info(f"Auto-discovered Snapchat data in subfolder: {item.name}")
-                    return str(item / 'memories'), str(potential_json), str(item / 'fixed_memories')
+                    return str(item / 'memories'), str(potential_json), 'output'
     except Exception as e:
         logger.warning(f"Error during auto-discovery: {e}")
 
@@ -197,15 +197,29 @@ def process_memories(args):
         try:
             # 1. Determine the timestamp
             # Strategy: Try to parse the filename first (most reliable for Snapchat exports)
-            # Filename format example: "2022-10-04 18:33:11 UTC.jpg"
+            # Filename format example: "2022-10-04 18:33:11 UTC.jpg" OR "2020-01-31_UUID-main.mp4"
             date_str = file_path.stem # remove extension
             
+            date_obj = None
+            
+            # Try parsing standard Snapchat export format: "2022-10-04 18:33:11 UTC"
             try:
-                # Try parsing standard Snapchat export format
                 date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S UTC")
             except ValueError:
+                pass
+            
+            # Try parsing date prefix format: "2020-01-31_UUID-main"
+            if date_obj is None:
+                try:
+                    # Extract just the date part (first 10 characters: YYYY-MM-DD)
+                    date_prefix = date_str[:10]
+                    date_obj = datetime.strptime(date_prefix, "%Y-%m-%d")
+                except ValueError:
+                    pass
+            
+            if date_obj is None:
                 if args.verbose:
-                    logger.warning(f"Skipping {file_path.name}: Filename is not a timestamp.")
+                    logger.warning(f"Skipping {file_path.name}: Cannot parse date from filename.")
                 files_failed += 1
                 continue
 
