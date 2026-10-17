@@ -2,7 +2,10 @@ services:
   snapchat-memories:
     build: .
     volumes:
-      - ./mydata:/data
+      - ./data:/data
       - ./output:/output
+    # Timezone used for the photo dates (EXIF stores local time)
+    environment:
+      - TZ=Europe/Stockholm
     # Uncomment to pass additional arguments
     # command: ["--verbose"]
